@@ -1,0 +1,6 @@
+# Ignore everything in certs/
+certs/*
+
+# But do not ignore files ending in "req"
+!certs/*.conf
+.DS_Store
