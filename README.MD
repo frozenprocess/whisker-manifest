@@ -1,8 +1,8 @@
 # How to enable Calico Whisker in a Manifest based install
 
-The whole purpose of this tutorial is to show you the behind the scene magic that happens when you are using Tigera-operator to install Calico.
+The purpose of this tutorial is to reveal the behind-the-scenes magic that happens when you use the Tigera operator to install Calico.
 
-Keep in mind that everything that you read here can be done using the `tigera-operator` and two resources. Basically, in an operator installation method (our recommended way) you just create these two resources and tigera-operator takes care of everything else.
+Keep in mind that everything described here can be done using the tigera-operator and just two resources. In fact, with the operator installation method (which we recommend), you simply create these two resources, and the tigera-operator handles everything else automatically.
 
 ```bash
 apiVersion: operator.tigera.io/v1
@@ -18,7 +18,7 @@ metadata:
 
 # Requirements
 
-While this tutorial can be read like your favorite cat syfi, if you wish to replicate the same test in your environment there are a bunch of requirements that you need to install/have.
+While this tutorial can be read like your favorite cat scify, if you wish to replicate the same test in your environment there are a bunch of requirements that you need to install/have.
 - Docker
 - K3d
 - OpenSSL (To issue and sign certificates)
@@ -40,30 +40,29 @@ k3d cluster create \
 
 ## Install Calico and Typha in your cluster
 
-Now that we have the cluster ready it is time to install Calico, but this time we are going to install Calico and Typha using a manifest instead of the operator.
+Now that our cluster is ready, it’s time to install Calico. This time, we’ll install both Calico and Typha using manifests instead of the operator.
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.2/manifests/calico-typha.yaml
 ```
 
-**Note:** Currently, you need to have at least one instance of Typha running in order to use Goldmane and Whisker.
+**Note:** Currently, you need at least one instance of Typha running to use Goldmane and Whisker.
 
 You can use the following command to verify if `calico-node` pods are running.
 ```bash
 kubectl rollout status -n kube-system ds/calico-node
 ```
-Keep in mind that a manifest install requires you (the administrator) to configure every part of Calico.
-While this approach is highly flexible it is not with out pain of things like missing YAML indentations or adding a value which was deprecated or is not supported in the current version of Calico.
+Keep in mind that a manifest-based install requires you—the administrator—to configure every part of Calico. While this approach offers a high degree of flexibility, it’s not without its challenges, such as missing YAML indentations or using values that are deprecated or unsupported in the current version of Calico.
 
-This is why we recommend you to use `Tigera-operator`, the operator is a dedicated operator (its to nice I'm using it twice!) that is tuned to configure and maintain your Calico installation so you can spend your time on the things that matters the most! (ehm ehm, vacations)
+This is why we recommend using the tigera-operator. It’s a dedicated operator (so good we’re saying it twice!) designed to configure and maintain your Calico installation—so you can focus on what matters most (ahem... vacations).
 
 ## Generating certificates
 
-By default, the manifest install doesn't secure Calico components, and it is your (the administrator) responsibility to generate certificate authority, certificates and sign them and rotate them on the desired period. Keep in mind that these are all automated in an operator based install.
+By default, a manifest-based install does not secure Calico components. It is the administrator’s responsibility to generate a Certificate Authority, issue and sign the necessary certificates, and rotate them on the desired schedule. Keep in mind that all of these steps are automated when using an operator-based installation.
 
 ### 🔐 Certificate Authority (CA)
 
-To secure calico components we need a CA to issue and sign our certificates. While this can be a valid  certificate authority that issues certificates to the masses, we can also create our own CA to sign and issue these resources.
+To secure Calico components, we need a Certificate Authority (CA) to issue and sign our certificates. While this could be a publicly trusted CA that issues certificates for general use, we can also create our own internal CA to generate and sign these certificates for our specific needs.
 
 
 Use the following command to establish a CA and generate its keys:
@@ -77,9 +76,9 @@ openssl req -new -x509 -key certs/ca.key \
 
 ### 📥 Generating a Certificate for calico-typha (Typha Server)
 
-Calico typha is a middle layer, key value caching system designed to sit between `calico-node` requests and your `kube api-server`. This allows Typha to query the cluster api-server once and provide `calico-node` with answers to all its queries. if any changes occurs within your Kubenretes cluster then Typha will initiate another query to update its cache.
+Calico Typha is a middleware key-value caching system designed to sit between `calico-node` requests and your Kubernetes `kube-apiserver`. This setup allows Typha to query the API server once and then serve the cached responses to all `calico-node` instances. If any changes occur within your Kubernetes cluster, Typha will trigger a new query to update its cache accordingly.
 
-**Note:** Remember the `CN=` name here and in the next step, these two are used in the tunning typha and calico-node section as an additional verification check.
+**Note:** Remember the `CN=` value used here and in the next step—these are referenced later in the Typha and Calico-node tuning section as part of the certificate verification process.
 
 Use the following command to generate a certificate request for Typha:
 ```bash
@@ -100,9 +99,9 @@ openssl x509 -req \
 
 ### 📥 Generating a Certificate for Calico-Node (Typha Client)
 
-In order to generate a certificate for the calico-node pod first you need to create a certificate request, this is due the fact that your CA needs to issue and sign all these certificates.
+In order to generate a certificate for the calico-node pod, you first need to create a certificate request. This is necessary because your CA must issue and sign all certificates.
 
-Use the following command to generate a ceritificat request:
+Use the following command to generate a certificate request:
 ```bash
 openssl req \
   -newkey rsa:2048 -nodes -sha256 -keyout certs/typha-client.key \
@@ -121,7 +120,7 @@ openssl x509 -req \
 
 ### 📥 Generating Certificates for Goldmane and Whisker
 
-Goldmane and Whisker certificates are a little bit different. Since these two components hold sensitive (Network Flow Logs) information we are going to assign roles to their certificates. On top of that since these certificates are going to be used to emmit flow logs from other workloads (calico-node in this example) we need to assign Subject Alternative Name (SAN) to these certificates.
+Goldmane and Whisker certificates are a little different. Since these two components handle sensitive information—specifically Network Flow Logs—we need to assign specific roles to their certificates. Additionally, because these certificates will be used to emit flow logs from other workloads (such as calico-node in this example), we must include Subject Alternative Names (SANs) in the certificates.
 
 Use the following command to generate a certificate `request` for Goldmane:
 ```bash
@@ -142,7 +141,7 @@ openssl req \
 
 ### Finishing the Certificate Requests and Signing Certificates with our CA
 
-Great, now that we have two certificate requests it is time to sign them with our CA. This allows any workload that uses these certificates to verify their authenticity.
+Great! Now that we have two certificate requests, it's time to sign them with our CA. This allows any workload using these certificates to verify their authenticity.
 
 Use the following command to generate and sing your Goldmane certificate:
 ```bash
@@ -165,8 +164,9 @@ openssl x509 -req \
 
 ### Importing Certificates into the cluster
 
-Now that we have all our certificates signed and ready let's import them into our Kubernetes cluster as a configmap/secret. This is a best practice in Kubernetes since it allows us to change these certificates easily by replacing these configmaps.
+Now that all our certificates are signed and ready, let’s import them into our Kubernetes cluster as ConfigMaps and Secrets. This is a best practice because it allows us to easily update certificates by replacing these ConfigMaps and Secrets.
 
+Use the following command to import all the Certificates into your cluster:
 ```
 kubectl create configmap goldmane-ca-bundle \
   --namespace=kube-system \
@@ -199,9 +199,11 @@ kubectl create secret tls whisker-backend-key-pair \
   --dry-run=server -o yaml | kubectl apply -f -
 ```
 
-## Tunning Typha to use certificates
+If you’ve come here from a blog, now is the time to go back. The certificate generation step ends here.
 
-Our next step is to assign certificates to Typha. In order to do that you need to modify the `calico-typha` manifest and add a VolumeMount object to connect the previous generated secrets to the pods, add a volume to mount them in the workloads, and add a bunch of environment variables to let Typha know its certificate time.
+## Tuning Typha to Use Certificates
+
+Our next step is to assign certificates to Typha. To do this, you need to modify the calico-typha manifest by adding a VolumeMount to connect the previously generated secrets to the pods, adding a volume to mount them in the workloads, and setting several environment variables so Typha knows it’s certificate time.
 
 Use the following command to modify your typha deployment:
 ```bash
@@ -274,15 +276,15 @@ kubectl patch deployment calico-typha -n kube-system --type=strategic -p='
 }'
 ```
 
-**Note**: We've also shared the CA certificate (not the key), this is important since our CA is not a "valid/public" CA we use the `TYPHA_CAFILE` environment variable to inject the CA certificate into the Typha processes. 
+**Note**: We also share the CA certificate (but not the key). Since our CA is not a public or widely trusted CA, we use the `TYPHA_CAFILE` environment variable to inject the CA certificate into the Typha process.
 
 ## Tunning calico-node to use certificates
 
 Now we need to do the same for `calico-node` daemonset,
 
-**Note:** Since `calico-node` is going to be a client we are setting the `FELIX_TYPHACN` to `typha-server` so it matches the certificate that was issued earlier to the server, this will provide `calico-node` with an additional verification check.
+**Note:** Since `calico-node` acts as a client, we set the `FELIX_TYPHACN` environment variable to `typha-server` so it matches the certificate issued earlier to the server. This provides `calico-node` with an additional verification check.
 
-Use the following command to adjust `calico-node` daemonset to use certificates for its communication with Typha: 
+Use the following command to configure the `calico-node` daemonset to use certificates for communication with Typha:
 ```bash
 kubectl patch ds calico-node -n kube-system --type=strategic -p='
 {
@@ -356,18 +358,18 @@ kubectl patch ds calico-node -n kube-system --type=strategic -p='
   }
 }'
 ```
+Before proceeding to the next step, use the following command to ensure your changes have been applied to Calico and Typha.
 
-Before starting the next step use the following command to make sure that your changes are picked up by Calico and Typha.
-
+Use the following command to verify:
 ```bash
 kubectl rollout status -n kube-system ds/calico-node deployment/calico-node
 ```
 
 ## Deploying Goldmane
 
-Now that we have our Calico and Typha workloads running and secured, let's start running Goldmane and Whisker.
+Now that our Calico and Typha workloads are running and secured, let's start deploying Goldmane and Whisker.
 
-First we need a service account, service accounts are used to give workloads an identity so the administrator can manage their reach.
+First, we need a ServiceAccount. Service accounts provide workloads with an identity, allowing administrators to manage their permissions and access.
 
 Use the following command to generate a service account for Goldmane:
 ```bash
@@ -380,7 +382,7 @@ metadata:
 EOF
 ```
 
-Next, we need to generate a service to point to the goldmane ingestion port, this will be used by any emitter (in this case calico-node) to send flows to the Goldmane server.
+Next, we need to create a Service that points to the Goldmane ingestion port. This Service will be used by any emitter (in this case, `calico-node`) to send flow data to the Goldmane server.
 
 Use the following command to generate the service:
 ```
@@ -402,7 +404,7 @@ spec:
 EOF
 ```
 
-Goldmane binary, looks for a config file to be present, and we need to supply that file to our Goldmane when its starting.
+The Goldmane binary looks for a configuration file at startup, so we need to provide that file when launching Goldmane.
 
 Use the following command to generate the config file as a ConfigMap.
 ```bash
@@ -419,9 +421,9 @@ EOF
 
 ### Tunning Goldmane Deployment
 
-Goldmane binary looks for certain indications to change its behavior, since certificates have finite life time we are using environment variables to tell Goldmane which certificates it should use.
+The Goldmane binary looks for specific indicators to adjust its behavior. Since certificates have a finite lifetime, we use environment variables to specify which certificates Goldmane should use.
 
-Examine the the following block, it is an example that illustrate the required changes in Goldmane deployment that you will deploy later.
+Examine the following block, it is an example that illustrate the required changes in Goldmane deployment that you will deploy later.
 ```bash
         - name: SERVER_CERT_PATH
           value: /goldmane-key-pair/tls.crt
@@ -431,7 +433,7 @@ Examine the the following block, it is an example that illustrate the required c
           value: /etc/pki/tls/certs/tigera-ca-bundle.crt
 ```
 
-Similar to the previous parts we need to mount the VolumeMounts to the workload so they an be accessed inside the workload.
+Similar to the previous steps, we need to mount the VolumeMounts to the workload so they can be accessed from within the workload.
 ```bash
       volumes:
       - configMap:
@@ -448,7 +450,7 @@ Similar to the previous parts we need to mount the VolumeMounts to the workload 
           secretName: goldmane-key-pair
 ```
 
-Finally, we need to mount these VolumeMounts in their respective path inside the workload.
+Finally, we need to mount these VolumeMounts at their respective paths inside the workload.
 ```bash
         volumeMounts:
         - mountPath: /config
@@ -462,7 +464,7 @@ Finally, we need to mount these VolumeMounts in their respective path inside the
           readOnly: true
 ```
 
-**Note:** The following gist file has all the changes that we examined in the above.
+**Note:** The following Gist file contains all the changes we reviewed above.
 
 Use the following command to deploy Goldmane:
 ```bash
@@ -471,11 +473,11 @@ kubectl create -f https://gist.githubusercontent.com/frozenprocess/5555ec3266133
 
 ## Deploying Whisker UI
 
-Now that we have our Calico and Typha workloads running and secured, let's start running Whisker and Whisker.
+Now that Goldmane is up and running, it’s time to set up the Whisker UI.
 
-First we need a service account, service accounts are used to give workloads an identity so the administrator can manage their reach.
+First, we need to create a ServiceAccount. Service accounts provide workloads with an identity, allowing administrators to control and manage their permissions.
 
-Use the following command to generate a service account for Whisker:
+Use the following command to create a ServiceAccount for Whisker:
 ```bash
 kubectl create -f -<<EOF
 apiVersion: v1
@@ -486,7 +488,7 @@ metadata:
 EOF
 ```
 
-Next, we need to generate a service to point to the Whisker UI port, this will be used by Whisker Users (Administrators) to view flowlogs and policies inside whisker. Keep in mind that we recommend using a `ClusterIP` service since flowlogs are sensitive information.
+Next, we need to create a Service that points to the Whisker UI port. This Service will be used by Whisker users (administrators) to view flow logs and policies within Whisker. Keep in mind, we recommend using a `ClusterIP` service since flow logs contain sensitive information.
 
 Use the following command to generate the service:
 ```bash
@@ -510,9 +512,9 @@ EOF
 
 ### Tunning Whisker Deployment
 
-Similar to Goldmane binary, Whisker looks for certain indications to change its behavior, since certificates have finite life time we are using environment variables to tell Whisker which certificates it should use. On top of that Whisker needs a URL to know where Goldmane resides this is achieved by setting `GOLDMANE_HOST` environment variable in the deployment.
+Similar to the Goldmane binary, Whisker looks for specific indicators to adjust its behavior. Since certificates have a finite lifetime, we use environment variables to specify which certificates Whisker should use. Additionally, Whisker needs a URL to locate Goldmane, which is provided by setting the `GOLDMANE_HOST` environment variable in the deployment.
 
-Examine the the following block, it is an example that illustrate the required changes in Whisker deployment that you will deploy later.
+Examine the following block, it is an example that illustrate the required changes in Whisker deployment that you will deploy later.
 
 ```bash
       - env:
@@ -551,14 +553,14 @@ Finally, we need to mount these VolumeMounts in their respective path inside the
           name: goldmane-ca-bundle
         name: goldmane-ca-bundle
 ```
-**Note:** The following gist file has all the changes that we examined in the above.
+**Note:** The following Gist file contains all the changes we reviewed above.
 
 Use the following command to deploy Whisker:
 ```bash
 kubectl create -f https://gist.githubusercontent.com/frozenprocess/5555ec3266133e53510b4bda59f38e42/raw/003335e822557b8bd56b0180418ec1bf6f7232cb/whisker.yaml
 ```
 
-You can verify Goldmane and Whisker deployment in a Manifest based install by using the following command:
+You can verify the Goldmane and Whisker deployments in a manifest-based install by using the following command:
 ```bash
 kubectl rollout status -n kube-system deployment/goldmane
 kubectl rollout status -n kube-system deployment/whisker
@@ -566,20 +568,20 @@ kubectl rollout status -n kube-system deployment/whisker
 
 ### Accessing Whisker
 
-**Note:** The following step needs to be running if you wish to access Whisker UI using a ClusterIP approach.
+**Note:** The following step must be running if you want to access the Whisker UI using a ClusterIP service.
 
 Open a new terminal and run the following command:
 ```bash
 kubectl port-forward -n kube-system deployment/whisker 8081:8081
 ```
 
-Now open a browser and point it to `localhost:8081`, you should see the Whisker UI. However, no flows are going to appear and this is because flow generation happens in Felix (Brian of Calico) and we haven't told that to Calico.
+Now, open a browser and navigate to `localhost:8081`. You should see the Whisker UI. However, no flows will appear because flow generation happens in Felix (the "Brian" of Calico), and we haven’t yet configured Calico to enable it.
 
-It's time to fiddle with the environment Variables again!
+It’s time to tweak the environment variables again!
 
 ## Instructing Felix to generate Flows Logs and ship them to Goldmane
 
-Now that we have all the certificates in place, all we need to do is to set two more environment variables in the `calico-node` daemonset to instruct Felix to turn on its flow logs generation and where to send them to our Goldmane.
+Now that all the certificates are in place, we just need to set two more environment variables in the `calico-node` daemonset to instruct Felix to enable flow log generation and specify where to send them—our Goldmane server.
 ```bash
         - name: FELIX_FLOWLOGSGOLDMANESERVER
           value: goldmane.kube-system.svc:7443
@@ -615,13 +617,13 @@ kubectl patch ds calico-node -n kube-system --type=strategic -p='
 }'
 ```
 
-After this change, it will take a moment for all calico-node pods in your cluster to restart. However, if you check your Whisker UI you will not see any flowlogs to appear.
+After this change, it will take a moment for all `calico-node` pods in your cluster to restart. However, if you check the Whisker UI, you might not see any flow logs appear immediately.
 
 Ah, it's puzzle!
 
 ### It is always DNS
 
-Until this point we have configured everything required for our Goldmane and Whisker to run and in a perfect world things should work as expected. However, if you check `calico-node` logs you will see a warning similar to the following:
+Up to this point, we have configured everything required for Goldmane and Whisker to run, and in an ideal scenario, things should work as expected. However, if you check the `calico-node` logs, you may see a warning similar to the following:
 
 
 > You can use the following command to check for these errors in your environment:
@@ -634,9 +636,9 @@ Until this point we have configured everything required for our Goldmane and Whi
 2025-07-17 14:21:38.502 [WARNING][75] felix/client.go 175: Failed to connect to flow server error=rpc error: code = Unavailable desc = name resolver error: produced zero addresses target="dns:///goldmane.kube-system.svc:7443"
 ``` 
 
-Ah seems like there is an issue. So back to Kubernetes 101, Pods can be connected to the host network "This means they communicate by using the node IP address" or namespaced. This decision is indicated by a config in your `daemonset/deployment/pod` spec via the `hostNetwork: true` field. 
+Ah, it seems there’s an issue. Back to Kubernetes 101: Pods can be connected either to the host network—meaning they communicate using the node’s IP address—or to a namespace network. This behavior is controlled by the `hostNetwork: true` field in your DaemonSet, Deployment, or Pod specification.
 
-You might be wondering but what this has to do with our dns issue? Well, everything. Fromt he perspective of calico-node its trying to resolve the internal dns record of `goldmane.kube-system.svc` however, this query is sent to the host DNS server and forwarders which don't know anything about our Kubernetes records. To fix this issue all we need to do is to change the dnsPolicy of our daemonset to `ClusterFirstWithHostNet`. This will allow the first query to go through the cluster.
+You might be wondering, what does this have to do with our DNS issue? Well, everything. From the perspective of `calico-node`, it tries to resolve the internal DNS record `goldmane.kube-system.svc`. However, this query is sent to the host’s DNS server and forwarders, which don’t know anything about Kubernetes records. To fix this, we need to change the `dnsPolicy` of our daemonset to `ClusterFirstWithHostNet`. This setting allows DNS queries to be routed through the cluster DNS first.
 
 
 ```bash
