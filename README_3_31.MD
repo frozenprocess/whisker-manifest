@@ -21,15 +21,13 @@ metadata:
 While this tutorial can be read like your favorite cat scify, if you wish to replicate the same test in your environment there are a bunch of requirements that you need to install/have.
 - Docker
 - K3d
-- Calico manifest based install v3.30.2
+- Calico manifest based install v3.31.0
 - OpenSSL (To issue and sign certificates)
 - Internet
 
-if you are running Calico v3.31.0 follow [this guide](README_3_31.MD).
-
 ## Setup your cluster
 
-> **Note** This guide was written and tested for Calico v3.30.2, and expects that you are running the same version. In a case that your Calico version might differ you might have to adjust some of the commands and deployments.
+> **Note** This guide was written and tested for Calico v3.31.0, and expects that you are running the same version. In a case that your Calico version might differ you might have to adjust some of the commands and deployments.
 
 Ok, just like the matrix you have chosen the red pill and now I'm going to show you how deep the rabbit hole goes. For this tutorial we are going to use `k3d`, and `docker` (hence being a requirement). This will allow us to spin up a `k3s` cluster super fast.
 
@@ -48,7 +46,7 @@ k3d cluster create \
 Now that our cluster is ready, it’s time to install Calico. This time, we’ll install both Calico and Typha using manifests instead of the operator.
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.2/manifests/calico-typha.yaml
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.0/manifests/calico-typha.yaml
 ```
 
 **Note:** Currently, you need at least one instance of Typha running to use Goldmane and Whisker.
@@ -473,7 +471,7 @@ Finally, we need to mount these VolumeMounts at their respective paths inside th
 
 Use the following command to deploy Goldmane:
 ```bash
-kubectl create -f https://gist.githubusercontent.com/frozenprocess/5555ec3266133e53510b4bda59f38e42/raw/cd445826fa720446717e4a2d99ebdad1ee7a123f/goldmane.yaml
+kubectl create -f https://gist.githubusercontent.com/frozenprocess/5555ec3266133e53510b4bda59f38e42/raw/7a7203c6ff7bb8b4cde29b94a6653bc016258b94/goldmane.yaml
 ```
 
 ## Deploying Whisker UI
@@ -562,7 +560,7 @@ Finally, we need to mount these VolumeMounts in their respective path inside the
 
 Use the following command to deploy Whisker:
 ```bash
-kubectl create -f https://gist.githubusercontent.com/frozenprocess/5555ec3266133e53510b4bda59f38e42/raw/003335e822557b8bd56b0180418ec1bf6f7232cb/whisker.yaml
+kubectl create -f https://gist.githubusercontent.com/frozenprocess/5555ec3266133e53510b4bda59f38e42/raw/7a7203c6ff7bb8b4cde29b94a6653bc016258b94/whisker.yaml
 ```
 
 You can verify the Goldmane and Whisker deployments in a manifest-based install by using the following command:

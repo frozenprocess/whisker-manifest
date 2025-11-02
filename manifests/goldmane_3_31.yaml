@@ -36,12 +36,12 @@ spec:
         - name: CA_CERT_PATH
           value: /etc/pki/tls/certs/tigera-ca-bundle.crt
         - name: PUSH_URL
-          value: https://guardian.kube-system.svc.cluster.local:443/api/v1/flows/bulk
+          value: https://guardian.calico-system.svc.cluster.local:443/api/v1/flows/bulk
         - name: FILE_CONFIG_PATH
           value: /config/config.json
         - name: HEALTH_ENABLED
           value: "true"
-        image: docker.io/calico/goldmane:v3.30.2
+        image: quay.io/calico/goldmane:v3.31.0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
